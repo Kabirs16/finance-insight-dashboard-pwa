@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💰 Finance Manager Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            padding: 0;
+        }
+
+        .nav-tabs button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .nav-tabs button.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .nav-tabs button:hover {
+            background: #e9ecef;
+        }
+
+        .tab-content {
+            padding: 30px;
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .kpi-card h3 {
+            font-size: 0.9em;
+            font-weight: 600;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .kpi-value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 30px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1em;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .badge.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge.danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            color: #666;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .nav-tabs {
+                flex-wrap: wrap;
+            }
+
+            .nav-tabs button {
+                flex: 1 1 50%;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💰 Finance Manager</h1>
+            <p>Track Income, Expenses, Products & Shopping</p>
+        </header>
+
+        <div class="nav-tabs">
+            <button class="active" onclick="switchTab('dashboard')">Dashboard</button>
+            <button onclick="switchTab('products')">Products</button>
+            <button onclick="switchTab('expenses')">Expenses</button>
+            <button onclick="switchTab('income')">Income</button>
+            <button onclick="switchTab('cart')">Cart</button>
+        </div>
+
+        <!-- DASHBOARD TAB -->
+        <div id="dashboard" class="tab-content active">
+            <h2>Financial Dashboard</h2>
+            <div class="dashboard-grid">
+                <div class="kpi-card">
+                    <h3>Total Income</h3>
+                    <div class="kpi-value" id="totalIncome">₹0</div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Total Expenses</h3>
+                    <div class="kpi-value" id="totalExpenses">₹0</div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Balance</h3>
+                    <div class="kpi-value" id="balance">₹0</div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Savings Rate</h3>
+                    <div class="kpi-value" id="savingsRate">0%</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="chart-container">
+                    <canvas id="expenseChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="incomeChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- PRODUCTS TAB -->
+        <div id="products" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Product Inventory</h2>
+                <button onclick="openProductModal()">+ Add Product</button>
+            </div>
+
+            <div id="productsTable" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Price</th>
+                            <th>Quantity</th>
+                            <th>Category</th>
+                            <th>Value</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productsList"></tbody>
+                </table>
+            </div>
+            <div id="productsEmpty" class="empty-state">No products added yet</div>
+        </div>
+
+        <!-- EXPENSES TAB -->
+        <div id="expenses" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Expense Tracker</h2>
+                <button onclick="openExpenseModal()">+ Add Expense</button>
+            </div>
+
+            <div id="expensesTable" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Description</th>
+                            <th>Date</th>
+                            <th>Method</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expensesList"></tbody>
+                </table>
+            </div>
+            <div id="expensesEmpty" class="empty-state">No expenses recorded yet</div>
+        </div>
+
+        <!-- INCOME TAB -->
+        <div id="income" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Income Tracker</h2>
+                <button onclick="openIncomeModal()">+ Add Income</button>
+            </div>
+
+            <div id="incomeTable" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Source</th>
+                            <th>Amount</th>
+                            <th>Description</th>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="incomeList"></tbody>
+                </table>
+            </div>
+            <div id="incomeEmpty" class="empty-state">No income recorded yet</div>
+        </div>
+
+        <!-- CART TAB -->
+        <div id="cart" class="tab-content">
+            <h2>Shopping Cart</h2>
+            
+            <div id="cartTable" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Total</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cartList"></tbody>
+                </table>
+
+                <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px; text-align: right;">
+                    <h3>Cart Total: <span id="cartTotal">₹0</span></h3>
+                    <button onclick="checkout()" style="margin-top: 15px; width: 100%; max-width: 300px;">Checkout</button>
+                </div>
+            </div>
+
+            <div id="cartEmpty" class="empty-state">Your cart is empty</div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Product</h2>
+                <button class="close-btn" onclick="closeProductModal()">×</button>
+            </div>
+            <div class="success-message" id="productSuccess"></div>
+            <div class="error-message" id="productError"></div>
+            <div class="form-grid">
+                <input type="text" id="productName" placeholder="Product Name" required>
+                <input type="number" id="productPrice" placeholder="Price" step="0.01" required>
+                <input type="number" id="productQuantity" placeholder="Quantity" value="0">
+                <input type="text" id="productCategory" placeholder="Category">
+            </div>
+            <div class="form-group">
+                <textarea id="productDescription" placeholder="Description" rows="3"></textarea>
+            </div>
+            <button onclick="addProduct()" style="width: 100%;">Add Product</button>
+        </div>
+    </div>
+
+    <div id="expenseModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Expense</h2>
+                <button class="close-btn" onclick="closeExpenseModal()">×</button>
+            </div>
+            <div class="success-message" id="expenseSuccess"></div>
+            <div class="error-message" id="expenseError"></div>
+            <div class="form-grid">
+                <input type="text" id="expenseCategory" placeholder="Category" required>
+                <input type="number" id="expenseAmount" placeholder="Amount" step="0.01" required>
+                <select id="paymentMethod">
+                    <option value="cash">Cash</option>
+                    <option value="card">Card</option>
+                    <option value="transfer">Transfer</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <textarea id="expenseDescription" placeholder="Description" rows="3"></textarea>
+            </div>
+            <button onclick="addExpense()" style="width: 100%;">Add Expense</button>
+        </div>
+    </div>
+
+    <div id="incomeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Income</h2>
+                <button class="close-btn" onclick="closeIncomeModal()">×</button>
+            </div>
+            <div class="success-message" id="incomeSuccess"></div>
+            <div class="error-message" id="incomeError"></div>
+            <div class="form-grid">
+                <input type="text" id="incomeSource" placeholder="Source" required>
+                <input type="number" id="incomeAmount" placeholder="Amount" step="0.01" required>
+                <select id="incomeType">
+                    <option value="regular">Regular</option>
+                    <option value="irregular">Irregular</option>
+                    <option value="bonus">Bonus</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <textarea id="incomeDescription" placeholder="Description" rows="3"></textarea>
+            </div>
+            <button onclick="addIncome()" style="width: 100%;">Add Income</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080/api';
+
+        // Sample data for testing without backend
+        let sampleData = {
+            products: [
+                {id: 1, name: "Laptop", price: 45000, quantity: 2, category: "Electronics", description: "HP Pavilion"},
+                {id: 2, name: "Phone", price: 25000, quantity: 5, category: "Electronics", description: "OnePlus Nord"},
+                {id: 3, name: "Coffee", price: 200, quantity: 50, category: "Food", description: "Premium blend"}
+            ],
+            expenses: [
+                {id: 1, category: "Groceries", amount: 5000, description: "Weekly shopping", date: new Date().toISOString(), payment_method: "cash"},
+                {id: 2, category: "Utilities", amount: 2000, description: "Electricity bill", date: new Date().toISOString(), payment_method: "transfer"},
+                {id: 3, category: "Transport", amount: 1500, description: "Fuel", date: new Date().toISOString(), payment_method: "card"}
+            ],
+            income: [
+                {id: 1, source: "Salary", amount: 50000, description: "Monthly", date: new Date().toISOString(), income_type: "regular"},
+                {id: 2, source: "Freelance", amount: 15000, description: "Project", date: new Date().toISOString(), income_type: "irregular"}
+            ],
+            cart: []
+        };
+
+        let charts = {};
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-tabs button').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'dashboard') {
+                setTimeout(updateDashboard, 100);
+            } else if (tabName === 'products') {
+                displayProducts();
+            } else if (tabName === 'expenses') {
+                displayExpenses();
+            } else if (tabName === 'income') {
+                displayIncome();
+            } else if (tabName === 'cart') {
+                displayCart();
+            }
+        }
+
+        function updateDashboard() {
+            const totalIncome = sampleData.income.reduce((sum, item) => sum + item.amount, 0);
+            const totalExpenses = sampleData.expenses.reduce((sum, item) => sum + item.amount, 0);
+            const balance = totalIncome - totalExpenses;
+            const savingsRate = totalIncome > 0 ? ((balance / totalIncome) * 100).toFixed(2) : 0;
+
+            document.getElementById('totalIncome').textContent = '₹' + totalIncome.toLocaleString('en-IN');
+            document.getElementById('totalExpenses').textContent = '₹' + totalExpenses.toLocaleString('en-IN');
+            document.getElementById('balance').textContent = '₹' + balance.toLocaleString('en-IN');
+            document.getElementById('savingsRate').textContent = savingsRate + '%';
+
+            updateCharts();
+        }
+
+        function updateCharts() {
+            // Expense Pie Chart
+            const expenseCategories = {};
+            sampleData.expenses.forEach(exp => {
+                expenseCategories[exp.category] = (expenseCategories[exp.category] || 0) + exp.amount;
+            });
+
+            if (charts.expenseChart) charts.expenseChart.destroy();
+            charts.expenseChart = new Chart(document.getElementById('expenseChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(expenseCategories),
+                    datasets: [{
+                        data: Object.values(expenseCategories),
+                        backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Expenses by Category'
+                        }
+                    }
+                }
+            });
+
+            // Income Pie Chart
+            const incomeSource = {};
+            sampleData.income.forEach(inc => {
+                incomeSource[inc.source] = (incomeSource[inc.source] || 0) + inc.amount;
+            });
+
+            if (charts.incomeChart) charts.incomeChart.destroy();
+            charts.incomeChart = new Chart(document.getElementById('incomeChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(incomeSource),
+                    datasets: [{
+                        data: Object.values(incomeSource),
+                        backgroundColor: ['#f093fb', '#4facfe', '#00f2fe', '#667eea', '#764ba2']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Income by Source'
+                        }
+                    }
+                }
+            });
+
+            // Trend Line Chart
+            if (charts.trendChart) charts.trendChart.destroy();
+            charts.trendChart = new Chart(document.getElementById('trendChart'), {
+                type: 'line',
+                data: {
+                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                    datasets: [
+                        {
+                            label: 'Income',
+                            data: [15000, 15000, 15000, 15000],
+                            borderColor: '#4facfe',
+                            backgroundColor: 'rgba(79, 172, 254, 0.1)'
+                        },
+                        {
+                            label: 'Expenses',
+                            data: [5000, 4500, 6000, 5500],
+                            borderColor: '#f093fb',
+                            backgroundColor: 'rgba(240, 147, 251, 0.1)'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Monthly Trend'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // PRODUCTS
+        function openProductModal() {
+            document.getElementById('productModal').classList.add('active');
+        }
+
+        function closeProductModal() {
+            document.getElementById('productModal').classList.remove('active');
+            document.getElementById('productName').value = '';
+            document.getElementById('productPrice').value = '';
+            document.getElementById('productQuantity').value = '0';
+            document.getElementById('productCategory').value = '';
+            document.getElementById('productDescription').value = '';
+        }
+
+        function addProduct() {
+            const product = {
+                id: Math.max(...sampleData.products.map(p => p.id), 0) + 1,
+                name: document.getElementById('productName').value,
+                price: parseFloat(document.getElementById('productPrice').value),
+                quantity: parseInt(document.getElementById('productQuantity').value),
+                category: document.getElementById('productCategory').value || 'General',
+                description: document.getElementById('productDescription').value
+            };
+
+            if (!product.name || !product.price) {
+                showMessage('productError', 'Please fill all required fields');
+                return;
+            }
+
+            sampleData.products.push(product);
+            showMessage('productSuccess', 'Product added successfully!');
+            closeProductModal();
+            displayProducts();
+        }
+
+        function displayProducts() {
+            const container = document.getElementById('productsList');
+            const emptyState = document.getElementById('productsEmpty');
+            const table = document.getElementById('productsTable');
+
+            if (sampleData.products.length === 0) {
+                table.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            table.style.display = 'block';
+            emptyState.style.display = 'none';
+            
+            container.innerHTML = sampleData.products.map(p => `
+                <tr>
+                    <td>${p.name}</td>
+                    <td>₹${p.price.toLocaleString('en-IN')}</td>
+                    <td>${p.quantity}</td>
+                    <td>${p.category}</td>
+                    <td>₹${(p.price * p.quantity).toLocaleString('en-IN')}</td>
+                    <td>
+                        <button onclick="deleteProduct(${p.id})" style="background: #dc3545;">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function deleteProduct(id) {
+            sampleData.products = sampleData.products.filter(p => p.id !== id);
+            displayProducts();
+        }
+
+        // EXPENSES
+        function openExpenseModal() {
+            document.getElementById('expenseModal').classList.add('active');
+        }
+
+        function closeExpenseModal() {
+            document.getElementById('expenseModal').classList.remove('active');
+        }
+
+        function addExpense() {
+            const expense = {
+                id: Math.max(...sampleData.expenses.map(e => e.id), 0) + 1,
+                category: document.getElementById('expenseCategory').value,
+                amount: parseFloat(document.getElementById('expenseAmount').value),
+                description: document.getElementById('expenseDescription').value,
+                date: new Date().toISOString(),
+                payment_method: document.getElementById('paymentMethod').value
+            };
+
+            if (!expense.category || !expense.amount) {
+                showMessage('expenseError', 'Please fill all required fields');
+                return;
+            }
+
+            sampleData.expenses.push(expense);
+            showMessage('expenseSuccess', 'Expense added successfully!');
+            closeExpenseModal();
+            displayExpenses();
+            updateDashboard();
+        }
+
+        function displayExpenses() {
+            const container = document.getElementById('expensesList');
+            const emptyState = document.getElementById('expensesEmpty');
+            const table = document.getElementById('expensesTable');
+
+            if (sampleData.expenses.length === 0) {
+                table.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            table.style.display = 'block';
+            emptyState.style.display = 'none';
+
+            container.innerHTML = sampleData.expenses.map(e => `
+                <tr>
+                    <td>${e.category}</td>
+                    <td>₹${e.amount.toLocaleString('en-IN')}</td>
+                    <td>${e.description}</td>
+                    <td>${new Date(e.date).toLocaleDateString()}</td>
+                    <td><span class="badge success">${e.payment_method}</span></td>
+                    <td>
+                        <button onclick="deleteExpense(${e.id})" style="background: #dc3545;">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function deleteExpense(id) {
+            sampleData.expenses = sampleData.expenses.filter(e => e.id !== id);
+            displayExpenses();
+            updateDashboard();
+        }
+
+        // INCOME
+        function openIncomeModal() {
+            document.getElementById('incomeModal').classList.add('active');
+        }
+
+        function closeIncomeModal() {
+            document.getElementById('incomeModal').classList.remove('active');
+        }
+
+        function addIncome() {
+            const income = {
+                id: Math.max(...sampleData.income.map(i => i.id), 0) + 1,
+                source: document.getElementById('incomeSource').value,
+                amount: parseFloat(document.getElementById('incomeAmount').value),
+                description: document.getElementById('incomeDescription').value,
+                date: new Date().toISOString(),
+                income_type: document.getElementById('incomeType').value
+            };
+
+            if (!income.source || !income.amount) {
+                showMessage('incomeError', 'Please fill all required fields');
+                return;
+            }
+
+            sampleData.income.push(income);
+            showMessage('incomeSuccess', 'Income added successfully!');
+            closeIncomeModal();
+            displayIncome();
+            updateDashboard();
+        }
+
+        function displayIncome() {
+            const container = document.getElementById('incomeList');
+            const emptyState = document.getElementById('incomeEmpty');
+            const table = document.getElementById('incomeTable');
+
+            if (sampleData.income.length === 0) {
+                table.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            table.style.display = 'block';
+            emptyState.style.display = 'none';
+
+            container.innerHTML = sampleData.income.map(i => `
+                <tr>
+                    <td>${i.source}</td>
+                    <td>₹${i.amount.toLocaleString('en-IN')}</td>
+                    <td>${i.description}</td>
+                    <td>${new Date(i.date).toLocaleDateString()}</td>
+                    <td><span class="badge success">${i.income_type}</span></td>
+                    <td>
+                        <button onclick="deleteIncome(${i.id})" style="background: #dc3545;">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function deleteIncome(id) {
+            sampleData.income = sampleData.income.filter(i => i.id !== id);
+            displayIncome();
+            updateDashboard();
+        }
+
+        // CART
+        function addToCart(productId) {
+            const product = sampleData.products.find(p => p.id === productId);
+            if (!product) return;
+
+            const cartItem = sampleData.cart.find(c => c.product_id === productId);
+            if (cartItem) {
+                cartItem.quantity += 1;
+            } else {
+                sampleData.cart.push({
+                    id: Math.random(),
+                    product_id: productId,
+                    quantity: 1,
+                    name: product.name,
+                    price: product.price
+                });
+            }
+            displayCart();
+        }
+
+        function displayCart() {
+            const container = document.getElementById('cartList');
+            const emptyState = document.getElementById('cartEmpty');
+            const table = document.getElementById('cartTable');
+
+            if (sampleData.cart.length === 0) {
+                table.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            table.style.display = 'block';
+            emptyState.style.display = 'none';
+
+            const total = sampleData.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            container.innerHTML = sampleData.cart.map(item => `
+                <tr>
+                    <td>${item.name}</td>
+                    <td>${item.quantity}</td>
+                    <td>₹${item.price.toLocaleString('en-IN')}</td>
+                    <td>₹${(item.price * item.quantity).toLocaleString('en-IN')}</td>
+                    <td>
+                        <button onclick="removeFromCart(${item.id})" style="background: #dc3545;">Remove</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            document.getElementById('cartTotal').textContent = '₹' + total.toLocaleString('en-IN');
+        }
+
+        function removeFromCart(itemId) {
+            sampleData.cart = sampleData.cart.filter(item => item.id !== itemId);
+            displayCart();
+        }
+
+        function checkout() {
+            if (sampleData.cart.length === 0) {
+                alert('Cart is empty!');
+                return;
+            }
+
+            const total = sampleData.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            alert(`Order placed! Total: ₹${total.toLocaleString('en-IN')}`);
+            sampleData.cart = [];
+            displayCart();
+        }
+
+        function showMessage(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.style.display = 'block';
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 3000);
+        }
+
+        // Initialize
+        window.addEventListener('load', () => {
+            updateDashboard();
+        });
+    </script>
+</body>
+</html>
